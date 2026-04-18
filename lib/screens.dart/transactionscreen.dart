@@ -3,6 +3,8 @@ import 'package:personal_budget_tracker/model/transaction.dart';
 import 'package:personal_budget_tracker/sevices.dart/db_helper.dart';
 
 class AddTransaction extends StatefulWidget {
+  const AddTransaction({super.key});
+
   @override
   State<AddTransaction> createState() => _AddTransactionState();
 }
@@ -16,7 +18,7 @@ class _AddTransactionState extends State<AddTransaction> {
 
   DBHelper dbHelper = DBHelper();
 
-  save() async {
+  Future<void> save() async {
     TransactionModel tx = TransactionModel(
       title: title.text,
       amount: double.parse(amount.text),
@@ -26,6 +28,7 @@ class _AddTransactionState extends State<AddTransaction> {
     );
 
     await dbHelper.insert(tx);
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
