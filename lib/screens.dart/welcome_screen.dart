@@ -234,7 +234,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               ? Icons.light_mode_rounded
                               : Icons.dark_mode_rounded,
                         ),
-                      ),
+                      ), 
                     ],
                   ),
                   const SizedBox(height: 8),
