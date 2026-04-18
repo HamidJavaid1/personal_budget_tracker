@@ -78,12 +78,11 @@ class _AddEntryBottomSheetState extends State<AddEntryBottomSheet> {
   }
 
   void _onCategorySelected(String categoryName) {
-    setState(() {
-      _category = categoryName;
-      if (_titleController.text.isEmpty) {
-        _titleController.text = categoryName;
-      }
-    });
+    _category = categoryName;
+    if (_titleController.text.isEmpty) {
+      _titleController.text = categoryName;
+    }
+    setState(() {});
   }
 
   void _validateAndSubmit() {

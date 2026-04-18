@@ -3,9 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key, required this.onCurrencySelected});
+  const WelcomeScreen({
+    super.key,
+    required this.onCurrencySelected,
+    required this.isDarkMode,
+    required this.onToggleTheme,
+  });
 
   final Function(String) onCurrencySelected;
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -217,7 +224,20 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  const SizedBox(height: 16),
+                  Row(
+                    children: <Widget>[
+                      const Spacer(),
+                      IconButton.filledTonal(
+                        onPressed: widget.onToggleTheme,
+                        icon: Icon(
+                          widget.isDarkMode
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   ScaleTransition(
                     scale: Tween<double>(begin: 0.8, end: 1).animate(
                       CurvedAnimation(

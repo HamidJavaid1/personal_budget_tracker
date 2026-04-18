@@ -16,7 +16,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDark = false;
+  ThemeMode _themeMode = ThemeMode.light;
   bool _isFirstLaunch = true;
   String _selectedCurrency = 'USD';
   bool _isLoading = true;
@@ -32,12 +32,26 @@ class _MyAppState extends State<MyApp> {
       final prefs = await SharedPreferences.getInstance();
       final isFirstLaunch = prefs.getBool('first_launch_completed') != true;
       final savedCurrency = prefs.getString('selected_currency') ?? 'USD';
+      final savedThemeMode = prefs.getString('theme_mode');
+      final legacyDarkFlag = prefs.getBool('dark_mode');
+
+      ThemeMode resolvedThemeMode;
+      if (savedThemeMode == 'dark') {
+        resolvedThemeMode = ThemeMode.dark;
+      } else if (savedThemeMode == 'light') {
+        resolvedThemeMode = ThemeMode.light;
+      } else {
+        // Backward compatibility for older versions that used dark_mode bool.
+        resolvedThemeMode = (legacyDarkFlag ?? false)
+            ? ThemeMode.dark
+            : ThemeMode.light;
+      }
 
       if (mounted) {
         setState(() {
           _isFirstLaunch = isFirstLaunch;
           _selectedCurrency = savedCurrency;
-          _isDark = prefs.getBool('dark_mode') ?? false;
+          _themeMode = resolvedThemeMode;
           _isLoading = false;
         });
       }
@@ -50,11 +64,19 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _toggleTheme() {
+    final nextThemeMode = _themeMode == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
+
     setState(() {
-      _isDark = !_isDark;
+      _themeMode = nextThemeMode;
     });
+
     SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('dark_mode', _isDark);
+      final isDark = nextThemeMode == ThemeMode.dark;
+      prefs.setString('theme_mode', isDark ? 'dark' : 'light');
+      // Keep legacy flag in sync for compatibility.
+      prefs.setBool('dark_mode', isDark);
     });
   }
 
@@ -65,29 +87,64 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> _handleCurrencyChanged(String currency) async {
+    setState(() {
+      _selectedCurrency = currency;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_currency', currency);
+  }
+
   ThemeData _lightTheme() {
     final base = ThemeData.light(useMaterial3: true);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF2B6EF7),
+      brightness: Brightness.light,
+    );
     return base.copyWith(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF2B6EF7),
-        brightness: Brightness.light,
-      ),
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFFF4F7FF),
       textTheme: GoogleFonts.interTextTheme(base.textTheme),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+      ),
     );
   }
 
   ThemeData _darkTheme() {
     final base = ThemeData.dark(useMaterial3: true);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF00E4FF),
+      brightness: Brightness.dark,
+    );
     return base.copyWith(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF00E4FF),
-        brightness: Brightness.dark,
-      ),
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFF070A17),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
         bodyColor: const Color(0xFFEAF8FF),
@@ -96,6 +153,31 @@ class _MyAppState extends State<MyApp> {
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF111A32),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: const Color(0xFF101936),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF1A2848),
+        contentTextStyle: const TextStyle(color: Color(0xFFEAF8FF)),
       ),
     );
   }
@@ -127,12 +209,18 @@ class _MyAppState extends State<MyApp> {
       title: 'SmartBudget',
       theme: _lightTheme(),
       darkTheme: _darkTheme(),
-      themeMode: _isDark ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _themeMode,
       home: _isFirstLaunch
-          ? WelcomeScreen(onCurrencySelected: _handleCurrencySelected)
-          : HomeScreen(
-              isDarkMode: _isDark,
+          ? WelcomeScreen(
+              onCurrencySelected: _handleCurrencySelected,
+              isDarkMode: _themeMode == ThemeMode.dark,
               onToggleTheme: _toggleTheme,
+            )
+          : HomeScreen(
+              key: ValueKey<String>(_themeMode.name),
+              isDarkMode: _themeMode == ThemeMode.dark,
+              onToggleTheme: _toggleTheme,
+              onCurrencyChanged: _handleCurrencyChanged,
               selectedCurrency: _selectedCurrency,
             ),
     );
