@@ -1,6 +1,6 @@
 {
-    "name": "personal_budget_tracker",
-    "short_name": "personal_budget_tracker",
+    "name": "MoneyInfo",
+    "short_name": "MoneyInfo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

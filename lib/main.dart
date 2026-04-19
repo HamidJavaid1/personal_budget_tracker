@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:personal_budget_tracker/screens.dart/homescreen.dart';
 import 'package:personal_budget_tracker/screens.dart/welcome_screen.dart';
+import 'package:personal_budget_tracker/widgets/app_background.dart';
 
 void main() {
   runApp(const MyApp());
@@ -187,17 +188,79 @@ class _MyAppState extends State<MyApp> {
     if (_isLoading) {
       return MaterialApp(
         home: Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: <Color>[
-                  const Color(0xFF2B6EF7),
-                  const Color(0xFF00E4FF),
-                ],
+          backgroundColor: Colors.transparent,
+          body: AppBackground(
+            isDark: true,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 26,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  color: Colors.white.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      blurRadius: 30,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Container(
+                      width: 156,
+                      height: 156,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        color: Colors.white,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'MoneyInfo',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Track money with a cleaner flow.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.82),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    const SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(color: Colors.white),
             ),
           ),
         ),
@@ -217,7 +280,6 @@ class _MyAppState extends State<MyApp> {
               onToggleTheme: _toggleTheme,
             )
           : HomeScreen(
-              key: ValueKey<String>(_themeMode.name),
               isDarkMode: _themeMode == ThemeMode.dark,
               onToggleTheme: _toggleTheme,
               onCurrencyChanged: _handleCurrencyChanged,

@@ -10,6 +10,7 @@ class BudgetGoalsView extends StatelessWidget {
     required this.alertAnimation,
     required this.goalColor,
     required this.moneyFormatter,
+    required this.onEditGoals,
   });
 
   final bool isDark;
@@ -18,6 +19,7 @@ class BudgetGoalsView extends StatelessWidget {
   final Animation<double> alertAnimation;
   final Color Function(double ratio) goalColor;
   final String Function(double amount) moneyFormatter;
+  final VoidCallback onEditGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +31,26 @@ class BudgetGoalsView extends StatelessWidget {
       key: const ValueKey<String>('goals'),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       children: <Widget>[
-        Text(
-          'Budget Goals',
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: isDark ? const Color(0xFFEAF8FF) : const Color(0xFF0E2453),
-          ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                'Budget Goals',
+                style: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? const Color(0xFFEAF8FF)
+                      : const Color(0xFF0E2453),
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: onEditGoals,
+              icon: const Icon(Icons.edit_rounded),
+              label: const Text('Edit'),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         if (exceededCount > 0)

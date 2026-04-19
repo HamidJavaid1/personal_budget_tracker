@@ -40,45 +40,10 @@ class DashboardView extends StatelessWidget {
         key: const ValueKey<String>('dashboard'),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'SmartBudget',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? const Color(0xFFEAF8FF)
-                            : const Color(0xFF0E2453),
-                      ),
-                    ),
-                    Text(
-                      'Design your money flow, beautifully.',
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF98D6FF)
-                            : const Color(0xFF4D689B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton.filledTonal(
-                onPressed: onOpenSettings,
-                icon: const Icon(Icons.settings_rounded),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                onPressed: onToggleTheme,
-                icon: Icon(
-                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                ),
-              ),
-            ],
+          _DashboardHeader(
+            isDark: isDark,
+            onOpenSettings: onOpenSettings,
+            onToggleTheme: onToggleTheme,
           ),
           const SizedBox(height: 14),
           _GlassBalanceCard(
@@ -116,6 +81,115 @@ class DashboardView extends StatelessWidget {
             isDark: isDark,
             moneyFormat: moneyFormat,
             categories: categories,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({
+    required this.isDark,
+    required this.onOpenSettings,
+    required this.onToggleTheme,
+  });
+
+  final bool isDark;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onToggleTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? <Color>[
+                  const Color(0xFF0F2145),
+                  const Color(0xFF14396F),
+                  const Color(0xFF0D5C86),
+                ]
+              : <Color>[
+                  const Color(0xFF2B6EF7).withValues(alpha: 0.14),
+                  const Color(0xFF00C2FF).withValues(alpha: 0.10),
+                  Colors.white.withValues(alpha: 0.92),
+                ],
+        ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFF2B6EF7).withValues(alpha: 0.10),
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(0xFF2B6EF7).withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.asset('assets/icon.png', fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'MoneyInfo',
+                  style: GoogleFonts.poppins(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? const Color(0xFFEAF8FF)
+                        : const Color(0xFF0E2453),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Control, clarity, and a cleaner money flow.',
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFB8E8FF)
+                        : const Color(0xFF4D689B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton.filledTonal(
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_rounded),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            onPressed: onToggleTheme,
+            icon: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            ),
           ),
         ],
       ),

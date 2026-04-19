@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -9,9 +11,12 @@ import 'package:personal_budget_tracker/screens.dart/addentrybottomsheet.dart';
 import 'package:personal_budget_tracker/screens.dart/widgets/home/budget_goals_view.dart';
 import 'package:personal_budget_tracker/screens.dart/widgets/home/dashboard_view.dart';
 import 'package:personal_budget_tracker/screens.dart/widgets/home/home_bottom_navigation.dart';
+import 'package:personal_budget_tracker/screens.dart/widgets/home/limitreachnotification.dart';
 import 'package:personal_budget_tracker/screens.dart/widgets/home/savings_view.dart';
+import 'package:personal_budget_tracker/screens.dart/widgets/home/setbudgetgoalsview.dart';
 import 'package:personal_budget_tracker/screens.dart/widgets/home/transactions_view.dart';
 import 'package:personal_budget_tracker/sevices.dart/db_helper.dart';
+import 'package:personal_budget_tracker/widgets/app_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -33,6 +38,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final DBHelper _dbHelper = DBHelper();
+  final Set<String> _notifiedGoalKeys = <String>{};
+  final Set<String> _notifiedBudgetKeys = <String>{};
+  Timer? _topNotificationTimer;
 
   static const List<(String, String, IconData)>
   _savingTips = <(String, String, IconData)>[
@@ -205,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     CategoryConfig('Other', Icons.category_rounded, Color(0xFF42A5F5)),
   ];
 
-  static const Map<String, double> _budgetGoals = <String, double>{
+  Map<String, double> _budgetGoals = <String, double>{
     'Food': 10000,
     'Transport': 2200,
     'Bills': 3000,
@@ -323,6 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _topNotificationTimer?.cancel();
     _entryAnimationController.dispose();
     _alertAnimationController.dispose();
     super.dispose();
@@ -334,6 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       _transactions = data;
     });
+    _showBudgetLimitNotifications();
   }
 
   Future<void> _loadGoals() async {
@@ -342,6 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       goals = data;
     });
+    _showReachedGoalNotifications(data);
   }
 
   double get _income {
@@ -371,6 +382,121 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (ratio < 0.65) return const Color(0xFF00C853);
     if (ratio < 0.9) return const Color(0xFFFFD600);
     return const Color(0xFFFF3D00);
+  }
+
+  void _showTopNotification({
+    required Widget content,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    _topNotificationTimer?.cancel();
+    messenger.removeCurrentMaterialBanner();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        forceActionsBelow: false,
+        content: content,
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              _topNotificationTimer?.cancel();
+              messenger.removeCurrentMaterialBanner();
+              onAction();
+            },
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+
+    _topNotificationTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      messenger.removeCurrentMaterialBanner();
+    });
+  }
+
+  String _goalNotificationKey(SavingGoal goal) {
+    return goal.id?.toString() ?? '${goal.title}_${goal.createdAt}';
+  }
+
+  void _showReachedGoalNotifications(List<SavingGoal> loadedGoals) {
+    final reachedGoals = loadedGoals
+        .where((goal) => goal.progress >= 1)
+        .where(
+          (goal) => !_notifiedGoalKeys.contains(_goalNotificationKey(goal)),
+        )
+        .toList();
+
+    if (reachedGoals.isEmpty) return;
+
+    for (final goal in reachedGoals) {
+      _notifiedGoalKeys.add(_goalNotificationKey(goal));
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      for (final goal in reachedGoals) {
+        _showTopNotification(
+          content: LimitReachNotification.goalReached(
+            goalTitle: goal.title,
+            savedAmount: goal.savedAmount,
+            targetAmount: goal.targetAmount,
+            moneyFormatter: _moneyFormat.format,
+          ),
+          actionLabel: 'Check',
+          onAction: () {
+            if (!mounted) return;
+            setState(() => _currentTab = 3);
+          },
+        );
+      }
+    });
+  }
+
+  void _showBudgetLimitNotifications() {
+    final expenseMap = _expenseByCategory;
+    final newlyExceeded = _budgetGoals.entries.where((entry) {
+      final spent = expenseMap[entry.key] ?? 0;
+      final exceeds = spent > entry.value;
+      if (!exceeds) {
+        _notifiedBudgetKeys.remove(entry.key);
+        return false;
+      }
+      return !_notifiedBudgetKeys.contains(entry.key);
+    }).toList();
+
+    if (newlyExceeded.isEmpty) return;
+
+    for (final entry in newlyExceeded) {
+      _notifiedBudgetKeys.add(entry.key);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      for (final entry in newlyExceeded) {
+        final spent = expenseMap[entry.key] ?? 0;
+        final overBy = spent - entry.value;
+
+        _showTopNotification(
+          content: LimitReachNotification.budgetExceeded(
+            category: entry.key,
+            overBy: _moneyFormat.format(overBy),
+          ),
+          actionLabel: 'View',
+          onAction: () {
+            if (!mounted) return;
+            setState(() => _currentTab = 2);
+          },
+        );
+      }
+    });
   }
 
   Future<void> _showAddTransactionSheet() async {
@@ -410,11 +536,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await _loadData();
   }
 
+  Future<void> _openSetBudgetGoals() async {
+    final updatedGoals = await Navigator.of(context).push<Map<String, double>>(
+      MaterialPageRoute(
+        builder: (_) => Setbudgetgoalsview(initialGoals: _budgetGoals),
+      ),
+    );
+
+    if (!mounted || updatedGoals == null) return;
+    setState(() {
+      _budgetGoals = updatedGoals;
+    });
+    _showBudgetLimitNotifications();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBody: true,
       floatingActionButton: _currentTab == 3
           ? null
@@ -425,24 +566,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomNavigation(isDark),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? <Color>[
-                    const Color(0xFF050814),
-                    const Color(0xFF101633),
-                    const Color(0xFF13213E),
-                  ]
-                : <Color>[
-                    const Color(0xFFD8E9FF),
-                    const Color(0xFFEFF7FF),
-                    const Color(0xFFF9FCFF),
-                  ],
-          ),
-        ),
+      body: AppBackground(
+        isDark: isDark,
         child: SafeArea(
           child: FadeTransition(
             opacity: CurvedAnimation(
@@ -503,6 +628,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       alertAnimation: alertAnimation,
       goalColor: _goalColor,
       moneyFormatter: _moneyFormat.format,
+      onEditGoals: _openSetBudgetGoals,
     );
   }
 

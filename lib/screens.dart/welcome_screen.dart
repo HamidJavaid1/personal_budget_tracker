@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:personal_budget_tracker/widgets/app_background.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({
@@ -195,24 +196,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? <Color>[
-                    const Color(0xFF050814),
-                    const Color(0xFF101633),
-                    const Color(0xFF13213E),
-                  ]
-                : <Color>[
-                    const Color(0xFFD8E9FF),
-                    const Color(0xFFEFF7FF),
-                    const Color(0xFFF9FCFF),
-                  ],
-          ),
-        ),
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        isDark: isDark,
         child: SafeArea(
           child: FadeTransition(
             opacity: CurvedAnimation(
@@ -234,7 +220,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               ? Icons.light_mode_rounded
                               : Icons.dark_mode_rounded,
                         ),
-                      ), 
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -257,10 +243,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           ],
                         ),
                       ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 42,
-                        color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/icon.png',
+                            fit: BoxFit.cover,
+                            width: 64,
+                            height: 64,
+                          ),
+                        ),
                       ),
                     ),
                   ),
